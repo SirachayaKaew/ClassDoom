@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassDoom — ระบบจัดหาห้องเรียนและตารางสอนแบบเรียลไทม์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #0B2545;
+    --blue: #1B4B91;
+    --sky: #4A90D9;
+    --cyan: #4FC3E0;
+    --paper: #F5F9FD;
+    --card: #FFFFFF;
+    --line: #DCE7F5;
+    --ink: #10243E;
+    --ink-soft: #4A6079;
+    --status-free: #2E9E6B;
+    --status-busy: #D65B5B;
+    --status-swap: #E0A72E;
+    --radius: 14px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .mono{ font-family:'IBM Plex Mono', monospace; letter-spacing:0.02em; }
+
+  ::selection{ background:var(--sky); color:#fff; }
+
+  a{ color:inherit; }
+
+  img,svg{ display:block; max-width:100%; }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 28px;
+  }
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(245,249,253,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1080px; margin:0 auto; padding:16px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-weight:700; font-size:1.15rem; color:var(--navy);
+  }
+  .brand-mark{
+    width:30px; height:30px; border-radius:8px;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+    gap:2px; padding:5px;
+  }
+  .brand-mark span{ background:rgba(255,255,255,0.85); border-radius:2px; }
+  .brand-mark span:nth-child(3){ background:rgba(255,255,255,0.4); }
+  nav.links{ display:flex; gap:28px; font-size:0.92rem; color:var(--ink-soft); }
+  nav.links a{ text-decoration:none; transition:color .2s; }
+  nav.links a:hover{ color:var(--blue); }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:88px 0 64px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:-20% -10% auto -10%;
+    height:520px;
+    background:radial-gradient(60% 60% at 30% 20%, rgba(74,144,217,0.16), transparent 70%),
+               radial-gradient(50% 50% at 80% 10%, rgba(79,195,224,0.14), transparent 70%);
+    pointer-events:none;
+  }
+  .hero-grid{
+    position:relative; z-index:1;
+    display:grid; grid-template-columns: 1.05fr 0.95fr; gap:56px; align-items:center;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem; letter-spacing:0.08em;
+    color:var(--blue); background:#E8F1FC; border:1px solid var(--line);
+    padding:6px 12px; border-radius:100px; margin-bottom:22px;
+  }
+  .eyebrow::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--status-free); }
+
+  h1.title{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;
+    font-size:clamp(2.6rem, 5.5vw, 4rem);
+    color:var(--navy);
+    letter-spacing:-0.02em;
+    line-height:1.05;
+    margin-bottom:20px;
+  }
+  h1.title em{
+    font-style:normal;
+    background:linear-gradient(90deg,var(--blue),var(--cyan));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.lead{
+    font-size:1.08rem; color:var(--ink-soft); max-width:46ch; margin-bottom:32px;
+  }
+  .cta-row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:13px 24px; border-radius:10px; font-weight:600; font-size:0.95rem;
+    text-decoration:none; transition:transform .15s ease, box-shadow .15s ease;
+    border:1px solid transparent;
+  }
+  .btn-primary{ background:var(--navy); color:#fff; box-shadow:0 8px 20px -8px rgba(11,37,69,0.5); }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 12px 24px -8px rgba(11,37,69,0.55); }
+  .btn-ghost{ border-color:var(--line); color:var(--navy); background:#fff; }
+  .btn-ghost:hover{ border-color:var(--sky); }
+
+  .hero-nav{
+    display:flex; flex-wrap:wrap; gap:10px;
+  }
+  .hero-nav a{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 16px 10px 12px; border-radius:100px;
+    background:#fff; border:1px solid var(--line);
+    font-size:0.88rem; font-weight:600; color:var(--navy);
+    text-decoration:none; transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+  .hero-nav a:hover{
+    border-color:var(--sky); transform:translateY(-2px);
+    box-shadow:0 10px 20px -12px rgba(11,37,69,0.35);
+  }
+  .hero-nav .hn-idx{
+    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; font-weight:600;
+    color:var(--sky); background:#E8F1FC; border-radius:100px;
+    width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Signature: schedule grid mockup */
+  .schedule-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 24px 48px -24px rgba(11,37,69,0.25);
+    padding:20px;
+    position:relative;
+  }
+  .schedule-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:14px; padding:0 4px;
+  }
+  .schedule-head .dot-row{ display:flex; gap:6px; }
+  .schedule-head .dot-row span{ width:9px; height:9px; border-radius:50%; background:var(--line); }
+  .schedule-title{ font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--ink-soft); }
+
+  .grid-table{
+    display:grid;
+    grid-template-columns: 64px repeat(4, 1fr);
+    gap:6px;
+  }
+  .grid-table .cell{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    border-radius:8px;
+    padding:9px 6px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .grid-table .head{
+    color:var(--navy); font-weight:600; background:transparent;
+  }
+  .grid-table .room-label{
+    background:transparent; color:var(--navy); font-weight:600; text-align:left; padding-left:8px;
+  }
+  .cell.free{ background:#E7F6EE; color:var(--status-free); font-weight:600; }
+  .cell.busy{ background:#FBEAEA; color:var(--status-busy); font-weight:600; }
+  .cell.swap{
+    background:#FDF2DC; color:#8A6416; font-weight:600;
+    position:relative;
+    outline:2px solid var(--status-swap);
+    outline-offset:2px;
+  }
+  .callout{
+    margin-top:16px; padding:12px 14px; border-radius:10px;
+    background:var(--navy); color:#fff; font-size:0.8rem;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .callout .tag{
+    font-family:'IBM Plex Mono',monospace; font-size:0.65rem;
+    background:var(--status-swap); color:#3a2a04; padding:2px 6px; border-radius:5px;
+    white-space:nowrap; margin-top:1px;
+  }
+
+  /* ---------- SECTION SHELL ---------- */
+  section{ padding:88px 0; border-top:1px solid var(--line); }
+  section:first-of-type{ border-top:none; }
+  .section-head{ max-width:640px; margin-bottom:48px; }
+  .section-num{
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--sky); margin-bottom:12px; display:block;
+  }
+  h2.h2{
+    font-family:'IBM Plex Sans',sans-serif; font-weight:700; color:var(--navy);
+    font-size:clamp(1.7rem,3.2vw,2.3rem); letter-spacing:-0.01em; margin-bottom:14px;
+  }
+  .section-head p{ color:var(--ink-soft); font-size:1.02rem; max-width:56ch; }
+
+  /* ---------- WHAT (summary) ---------- */
+  .summary-panel{
+    display:grid; grid-template-columns: 1fr 1fr; gap:40px; align-items:center;
+  }
+  .summary-text p{ color:var(--ink-soft); margin-bottom:16px; font-size:1.02rem; }
+  .summary-text strong{ color:var(--navy); }
+  .stat-strip{
+    display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line);
+    border-radius:16px; overflow:hidden; background:#fff;
+  }
+  .stat-strip .stat{ padding:22px 16px; text-align:center; border-right:1px solid var(--line); }
+  .stat-strip .stat:last-child{ border-right:none; }
+  .stat .num{ font-family:'IBM Plex Mono',monospace; font-size:1.6rem; font-weight:600; color:var(--navy); }
+  .stat .label{ font-size:0.78rem; color:var(--ink-soft); margin-top:4px; }
+
+  /* ---------- HIGHLIGHTS ---------- */
+  .card-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .hcard{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:26px 24px; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .hcard:hover{ transform:translateY(-4px); box-shadow:0 20px 32px -20px rgba(11,37,69,0.3); border-color:var(--sky); }
+  .hcard .icon{
+    width:42px; height:42px; border-radius:10px; margin-bottom:16px;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hcard h3{ color:var(--navy); font-size:1.05rem; margin-bottom:8px; font-weight:600; }
+  .hcard p{ color:var(--ink-soft); font-size:0.92rem; }
+
+  /* ---------- FEATURES / STORIES ---------- */
+  .feature-auth{
+    display:flex; gap:20px; align-items:flex-start; padding:24px;
+    background:#fff; border:1px solid var(--line); border-radius:16px; margin-bottom:32px;
+  }
+  .feature-auth .tag-pill{
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--blue);
+    background:#E8F1FC; padding:4px 10px; border-radius:100px; white-space:nowrap; margin-top:2px;
+  }
+  .feature-auth h3{ color:var(--navy); margin-bottom:6px; font-size:1.05rem; }
+  .feature-auth p{ color:var(--ink-soft); font-size:0.94rem; }
+
+  .story-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .story{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .story .who{
+    display:flex; align-items:center; gap:10px;
+  }
+  .avatar{
+    width:34px; height:34px; border-radius:50%;
+    background:linear-gradient(135deg,var(--sky),var(--navy));
+    color:#fff; font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
+    display:flex; align-items:center; justify-content:center; font-weight:600;
+  }
+  .who .name{ font-weight:600; color:var(--navy); font-size:0.92rem; }
+  .who .role{ font-size:0.76rem; color:var(--ink-soft); }
+  .story p{ color:var(--ink-soft); font-size:0.92rem; }
+  .status-chip{
+    align-self:flex-start; font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
+    padding:6px 10px; border-radius:8px; font-weight:600;
+  }
+  .status-chip.ok{ background:#E7F6EE; color:var(--status-free); }
+  .status-chip.warn{ background:#FDF2DC; color:#8A6416; }
+
+  /* ---------- QUALITY ---------- */
+  .quality-list{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .qrow{
+    display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:16px;
+    background:#fff; padding:20px 22px;
+  }
+  .qrow .check{
+    width:26px; height:26px; border-radius:50%; background:#E7F6EE; color:var(--status-free);
+    display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:700;
+  }
+  .qrow h4{ color:var(--navy); font-size:0.98rem; margin-bottom:3px; }
+  .qrow p{ color:var(--ink-soft); font-size:0.86rem; }
+  .qrow .note{
+    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--sky);
+    border:1px dashed var(--sky); padding:4px 9px; border-radius:100px; white-space:nowrap;
+  }
+
+  /* ---------- MARKET ---------- */
+  .market-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .market-card{
+    border-radius:16px; padding:28px; border:1px solid var(--line);
+  }
+  .market-card.primary{ background:var(--navy); color:#fff; }
+  .market-card.secondary{ background:#fff; color:var(--ink); }
+  .market-card .m-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem; opacity:0.7; margin-bottom:10px; display:block;
+  }
+  .market-card h3{ font-size:1.15rem; margin-bottom:10px; }
+  .market-card.primary h3{ color:#fff; }
+  .market-card.secondary h3{ color:var(--navy); }
+  .market-card p{ font-size:0.92rem; opacity:0.85; margin-bottom:16px; }
+  .market-card ul{ list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .market-card li{ font-size:0.86rem; display:flex; gap:8px; align-items:flex-start; opacity:0.9; }
+  .market-card li::before{ content:"—"; opacity:0.6; }
+
+  /* ---------- FOOTER ---------- */
+  footer{ padding:48px 0 60px; }
+  .footer-inner{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+    padding-top:28px; border-top:1px solid var(--line);
+  }
+  footer .brand{ font-size:1rem; }
+  footer .fnote{ font-size:0.82rem; color:var(--ink-soft); }
+
+  /* ---------- REVEAL ---------- */
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  @media (max-width: 860px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .summary-panel{ grid-template-columns:1fr; }
+    .card-grid{ grid-template-columns:1fr; }
+    .story-grid{ grid-template-columns:1fr; }
+    .market-grid{ grid-template-columns:1fr; }
+    nav.links{ display:none; }
+    .grid-table{ grid-template-columns:52px repeat(4,1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+      ClassDoom
+    </div>
+    <nav class="links">
+      <a href="#what">ผลงาน</a>
+      <a href="#highlights">จุดเด่น</a>
+      <a href="#features">ฟีเจอร์</a>
+      <a href="#quality">มาตรฐาน</a>
+      <a href="#market">กลุ่มลูกค้า</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">สถานะระบบอัปเดตแบบเรียลไทม์</span>
+      <h1 class="title">จัดการห้องเรียน<br>และตารางสอน<br><em>โดยไม่ต้องเดินไปเช็ค</em></h1>
+      <p class="lead">ClassDoom คือเว็บไซต์ที่รวมสถานะห้องเรียนและตารางสอนทั้งโรงเรียนไว้ในที่เดียว นักเรียนและคุณครูเปิดดูได้ทุกที่ ทุกเวลา ไม่ต้องเดินข้ามตึกไปเช็คอีกต่อไป</p>
+      <nav class="hero-nav">
+        <a href="#what"><span class="hn-idx">01</span>ผลงาน</a>
+        <a href="#highlights"><span class="hn-idx">02</span>จุดเด่น</a>
+        <a href="#features"><span class="hn-idx">03</span>ฟีเจอร์</a>
+        <a href="#quality"><span class="hn-idx">04</span>มาตรฐาน</a>
+        <a href="#market"><span class="hn-idx">05</span>กลุ่มลูกค้า</a>
+      </nav>
+    </div>
+
+    <div class="schedule-card reveal">
+      <div class="schedule-head">
+        <span class="schedule-title">ตารางห้องเรียน · วันนี้</span>
+        <div class="dot-row"><span></span><span></span><span></span></div>
+      </div>
+      <div class="grid-table">
+        <div class="cell head"></div>
+        <div class="cell head">คาบ 1</div>
+        <div class="cell head">คาบ 2</div>
+        <div class="cell head">คาบ 3</div>
+        <div class="cell head">คาบ 4</div>
+
+        <div class="cell room-label">Gifted</div>
+        <div class="cell busy">ไม่ว่าง</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell busy">ไม่ว่าง</div>
+
+        <div class="cell room-label">6/13</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell swap">สลับคาบ</div>
+        <div class="cell busy">ไม่ว่าง</div>
+        <div class="cell free">ว่าง</div>
+
+        <div class="cell room-label">ดนตรี</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell free">ว่าง</div>
+        <div class="cell busy">ไม่ว่าง</div>
+      </div>
+      <div class="callout">
+        <span class="tag">6/13 · คาบ 2</span>
+        <span>มีการสลับคาบกันในวันนี้ชั่วคราว และมีการคืนคาบในวันศุกร์หน้าที่จะถึง</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="what">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-num">01 — เป็นผลงานอะไร</span>
+      <h2 class="h2">สรุปโดยย่อ</h2>
+    </div>
+    <div class="summary-panel">
+      <div class="summary-text">
+        <p><strong>ClassDoom</strong> คือเว็บไซต์สำหรับจัดหาห้องเรียนและตารางสอน ที่ให้นักเรียนและคุณครูตรวจสอบสถานะห้องเรียนและตารางสอนได้แบบเรียลไทม์ ผ่านระบบยืนยันตัวตนเฉพาะบุคคล</p>
+        <p>เป้าหมายหลักคือลดการเดินทางไปเช็คห้องเรียนโดยไม่จำเป็น และลดภาระการจดจำตารางนัดหมายหรือการแลกคาบเรียนของทั้งนักเรียนและคุณครู ด้วยข้อมูลชุดเดียวที่ทุกคนเห็นตรงกัน</p>
+      </div>
+      <div class="stat-strip">
+        <div class="stat">
+          <div class="num">1</div>
+          <div class="label">แหล่งข้อมูลตารางสอน<br>ที่ทุกคนใช้ร่วมกัน</div>
+        </div>
+        <div class="stat">
+          <div class="num">24/7</div>
+          <div class="label">ตรวจสอบสถานะ<br>ได้ทุกเวลา</div>
+        </div>
+        <div class="stat">
+          <div class="num">2</div>
+          <div class="label">สิทธิ์การเข้าถึง<br>นักเรียน / คุณครู</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="highlights">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-num">02 — จุดเด่นของผลงาน</span>
+      <h2 class="h2">แก้ปัญหาที่โรงเรียนเจอทุกวัน</h2>
+      <p>สามจุดเด่นหลักที่ ClassDoom ถูกออกแบบมาเพื่อแก้โดยเฉพาะ</p>
+    </div>
+    <div class="card-grid">
+      <div class="hcard">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 12l5-5M4 12l5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>ลดการเดินข้ามตึก</h3>
+        <p>ไม่ต้องเดินไปตรวจเช็คห้องเรียนอีกต่อไป เปิดเว็บไซต์เดียวก็รู้สถานะห้องได้ทันที</p>
+      </div>
+      <div class="hcard">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/><path d="M12 7v5l3 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>สถานะเรียลไทม์</h3>
+        <p>ตรวจสอบตารางสอนและสถานะห้องเรียนได้ทุกเมื่อ ข้อมูลอัปเดตทันทีที่มีการเปลี่ยนแปลง</p>
+      </div>
+      <div class="hcard">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="#fff" stroke-width="2"/><path d="M4 10h16M9 3v4M15 3v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>ลดภาระการจดจำ</h3>
+        <p>ไม่ต้องจำวันสอบ วันนัดหมาย หรือวันแลกคาบอีกต่อไป ทุกอย่างถูกบันทึกไว้ในระบบเดียว</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-num">03 — ฟีเจอร์ ฟังก์ชั่น และการทำงาน</span>
+      <h2 class="h2">ระบบทำงานอย่างไร</h2>
+      <p>ตัวอย่างการใช้งานจริงที่แสดงให้เห็นว่าฟีเจอร์หลักช่วยแก้ปัญหาได้อย่างไร</p>
+    </div>
+
+    <div class="feature-auth">
+      <span class="tag-pill">Authentication</span>
+      <div>
+        <h3>ยืนยันตัวตนแยกสิทธิ์ นักเรียน / คุณครู</h3>
+        <p>ทั้งนักเรียนและคุณครูเข้าสู่ระบบด้วยบัญชีของตนเอง เพื่อจัดการตารางสอน การนัดหมาย และธุระต่าง ๆ ของห้องเรียน โดยมองเห็นสถานะของเรื่องนั้นได้อย่างชัดเจนทันทีที่เปิดเว็บไซต์</p>
+      </div>
+    </div>
+
+    <div class="story-grid">
+      <div class="story">
+        <div class="who">
+          <div class="avatar">น</div>
+          <div>
+            <div class="name">นักเรียน</div>
+            <div class="role">ต้องการใช้ห้อง Gifted ทำงานส่งครู</div>
+          </div>
+        </div>
+        <p>ห้องเรียนสองห้องอยู่ไกลกัน ต้องเดินเกือบ 3 นาที แต่แค่เปิดเว็บไซต์ก็เห็นทันทีว่าห้องที่ต้องการมีใครจองไว้แล้วหรือยัง และมี extra class มาเรียนกี่โมง</p>
+        <span class="status-chip ok">● ห้อง Gifted — ว่าง คาบ 2–3</span>
+      </div>
+      <div class="story">
+        <div class="who">
+          <div class="avatar">ค</div>
+          <div>
+            <div class="name">คุณครูคณิตศาสตร์</div>
+            <div class="role">แลกคาบ 10 คาบกับ ม.6 ทุกห้อง</div>
+          </div>
+        </div>
+        <p>ครูบันทึกวันแลกคาบลงในเว็บไซต์ล่วงหน้า เมื่อถึงวันจริง นักเรียนห้อง 6/13 ที่ไม่ทราบมาก่อนเปิดตารางสอนออนไลน์ ก็เห็นสถานะแจ้งเตือนทันที</p>
+        <span class="status-chip warn">◐ 6/13 คาบพละ — สลับคาบชั่วคราว</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="quality">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-num">04 — คุณภาพและมาตรฐานของผลงาน</span>
+      <h2 class="h2">สร้างมาให้เชื่อถือได้</h2>
+    </div>
+    <div class="quality-list">
+      <div class="qrow">
+        <div class="check">✓</div>
+        <div>
+          <h4>ระบบยืนยันตัวตนที่ปลอดภัย</h4>
+          <p>แยกสิทธิ์การเข้าถึงระหว่างนักเรียนและคุณครูอย่างชัดเจน</p>
+        </div>
+      </div>
+      <div class="qrow">
+        <div class="check">✓</div>
+        <div>
+          <h4>ข้อมูลอัปเดตแบบเรียลไทม์</h4>
+          <p>ป้องกันปัญหาข้อมูลตารางสอนไม่ตรงกันระหว่างผู้ใช้งาน</p>
+        </div>
+      </div>
+      <div class="qrow">
+        <div class="check">✓</div>
+        <div>
+          <h4>UI/UX ใช้งานง่าย</h4>
+          <p>เห็นสถานะห้องเรียนและคาบเรียนครบในหน้าเดียว ไม่ต้องคลิกหลายขั้นตอน</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="market">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-num">05 — กลุ่มลูกค้าและส่วนแบ่งการตลาด</span>
+      <h2 class="h2">ใครคือผู้ใช้ ClassDoom</h2>
+    </div>
+    <div class="market-grid">
+      <div class="market-card primary">
+        <span class="m-eyebrow">กลุ่มเป้าหมายหลัก</span>
+        <h3>โรงเรียนมัธยมศึกษาขนาดกลาง–ใหญ่</h3>
+        <p>โรงเรียนที่มีอาคารเรียนหลายตึก และมีการสลับหรือแลกคาบเรียนบ่อยครั้ง</p>
+        <ul>
+          <li>มีหลายอาคาร ต้องเดินทางไกลระหว่างห้องเรียน</li>
+          <li>มีตารางสอบและการนัดหมายจำนวนมากในแต่ละภาคเรียน</li>
+          <li>ต้องการระบบกลางให้ทั้งนักเรียนและคุณครูใช้ร่วมกัน</li>
+        </ul>
+      </div>
+      <div class="market-card secondary">
+        <span class="m-eyebrow">กลุ่มรอง</span>
+        <h3>สถาบันกวดวิชา และมหาวิทยาลัย</h3>
+        <p>สถานศึกษาที่มีห้องเรียนหลายห้องและตารางสอนซับซ้อนต้องบริหารจัดการ</p>
+        <ul>
+          <li>มีห้องเรียนจำนวนมากที่ต้องจัดสรรให้หลายคลาสในแต่ละวัน</li>
+          <li>ต้องการลดข้อผิดพลาดจากการจองห้องซ้ำซ้อน</li>
+          <li>โอกาสขยายผลไปยังสถานศึกษาระดับอื่นในอนาคต</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <div class="brand">
+        <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+        ClassDoom
+      </div>
+      <div class="fnote">เว็บไซต์สำหรับจัดหาห้องเรียนและตารางสอน · Project Showcase</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const revealEls = document.querySelectorAll('.reveal, .hcard, .story, .qrow, .market-card, .feature-auth');
+  revealEls.forEach(el => el.classList.add('reveal'));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
